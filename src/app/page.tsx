@@ -56,7 +56,7 @@ export default async function Dashboard() {
             </div>
             <div className="flex items-center gap-2 text-sm text-textMuted">
               <span className="relative flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface border border-border">
-                <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-success animate-pulse"></span>
                 Live
               </span>
             </div>
