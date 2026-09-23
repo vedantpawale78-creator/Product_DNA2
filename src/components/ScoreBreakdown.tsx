@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { BreakdownItem } from "@/lib/trust-score";
 import { ChevronDown, ChevronUp, AlertCircle, CheckCircle, MinusCircle, Info } from "lucide-react";
 
@@ -8,7 +9,7 @@ interface ScoreBreakdownProps {
 }
 
 export default function ScoreBreakdown({ breakdown }: ScoreBreakdownProps) {
-  const [expanded, setExpanded] = new Map<number, boolean>();
+  const [expanded, setExpanded] = useState<Map<number, boolean>>(new Map());
 
   const getIcon = (points: number) => {
     if (points < 0) return <AlertCircle className="w-5 h-5 text-danger" />;

@@ -6,7 +6,7 @@ import { Edit2, Save, X, Cpu, HardDrive, MemoryStick, Battery, Thermometer } fro
 interface DeviceHeaderProps {
   device: {
     device_id: string;
-    nickname: string;
+    nickname: string | null;
     baseline_snapshot: any;
     created_at: string;
   };

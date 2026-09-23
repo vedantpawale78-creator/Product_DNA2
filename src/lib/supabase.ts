@@ -1,23 +1,83 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error("Missing Supabase environment variables");
+interface Device {
+  id: string;
+  device_id: string;
+  nickname: string | null;
+  baseline_snapshot: any;
+  created_at: string;
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+interface Scan {
+  id: string;
+  device_id: string;
+  snapshot: any;
+  flags: any[];
+  created_at: string;
+}
 
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
+interface TrustScore {
+  id: string;
+  device_id: string;
+  score: number;
+  breakdown: any[];
+  rul_months: number | null;
+  created_at: string;
+}
+
+function getSupabaseUrl() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!url) throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL");
+  return url;
+}
+
+function getSupabaseAnonKey() {
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!key) throw new Error("Missing NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  return key;
+}
+
+function getSupabaseServiceKey() {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY");
+  return key;
+}
+
+let _supabase: SupabaseClient | null = null;
+let _supabaseAdmin: SupabaseClient | null = null;
+
+function getSupabase() {
+  if (!_supabase) {
+    _supabase = createClient(getSupabaseUrl(), getSupabaseAnonKey());
+  }
+  return _supabase;
+}
+
+function getSupabaseAdmin() {
+  if (!_supabaseAdmin) {
+    _supabaseAdmin = createClient(getSupabaseUrl(), getSupabaseServiceKey(), {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+  }
+  return _supabaseAdmin;
+}
+
+export const supabase = new Proxy({} as SupabaseClient, {
+  get(_, prop) {
+    return getSupabase()[prop as keyof SupabaseClient];
   },
 });
 
-export async function getSingleDevice() {
+export const supabaseAdmin = new Proxy({} as SupabaseClient, {
+  get(_, prop) {
+    return getSupabaseAdmin()[prop as keyof SupabaseClient];
+  },
+});
+
+export async function getSingleDevice(): Promise<Device | null> {
   const { data, error } = await supabase
     .from("device")
     .select("*")
@@ -31,7 +91,7 @@ export async function getSingleDevice() {
   return data;
 }
 
-export async function createOrGetDevice(deviceId: string, baselineSnapshot: any, nickname?: string) {
+export async function createOrGetDevice(deviceId: string, baselineSnapshot: any, nickname?: string): Promise<Device> {
   const { data: existing } = await supabase
     .from("device")
     .select("*")
@@ -56,7 +116,7 @@ export async function createOrGetDevice(deviceId: string, baselineSnapshot: any,
   return data;
 }
 
-export async function insertScan(deviceId: string, snapshot: any, flags: any[]) {
+export async function insertScan(deviceId: string, snapshot: any, flags: any[]): Promise<Scan> {
   const { data, error } = await supabaseAdmin
     .from("scans")
     .insert({
@@ -76,7 +136,7 @@ export async function insertTrustScore(
   score: number,
   breakdown: any[],
   rulMonths: number | null
-) {
+): Promise<TrustScore> {
   const { data, error } = await supabaseAdmin
     .from("trust_scores")
     .insert({
@@ -92,7 +152,7 @@ export async function insertTrustScore(
   return data;
 }
 
-export async function getScans(deviceId: string, limit = 50) {
+export async function getScans(deviceId: string, limit = 50): Promise<Scan[]> {
   const { data, error } = await supabase
     .from("scans")
     .select("*")
@@ -104,7 +164,7 @@ export async function getScans(deviceId: string, limit = 50) {
   return data || [];
 }
 
-export async function getLatestTrustScore(deviceId: string) {
+export async function getLatestTrustScore(deviceId: string): Promise<TrustScore | null> {
   const { data, error } = await supabase
     .from("trust_scores")
     .select("*")
@@ -117,7 +177,7 @@ export async function getLatestTrustScore(deviceId: string) {
   return data;
 }
 
-export async function getLatestScan(deviceId: string) {
+export async function getLatestScan(deviceId: string): Promise<Scan | null> {
   const { data, error } = await supabase
     .from("scans")
     .select("*")
